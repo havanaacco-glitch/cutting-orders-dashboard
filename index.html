@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة أوامر القص المعلقة — CEO Executive Dashboard V2</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ════════════════════════════════════════════
+   VARIABLES + RESET
+════════════════════════════════════════════ */
+:root{
+  --bg:#080d1a; --card:#0f1828; --card2:#172035; --card3:#1c2a45;
+  --gold:#c9a227; --gold2:#e8c85a; --gold-dk:#7a601a;
+  --text:#e2e8f0; --muted:#7a8faa; --border:rgba(201,162,39,.16);
+  --red:#e53e3e; --red-bg:#3d1010; --red-dim:rgba(229,62,62,.15);
+  --orange:#dd6b20; --org-bg:#3d1a08; --org-dim:rgba(221,107,32,.15);
+  --yellow:#d69e2e; --yel-bg:#3d2a08; --yel-dim:rgba(214,158,46,.12);
+  --green:#38a169; --grn-bg:#0d2e1a; --grn-dim:rgba(56,161,105,.12);
+  --teal:#319795; --tel-bg:#0c2525; --tel-dim:rgba(49,151,149,.12);
+  --purple:#7c5cbf; --pur-bg:#261646; --pur-dim:rgba(124,92,191,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Cairo,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;direction:rtl}
+body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(201,162,39,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(201,162,39,.02) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+.hidden{display:none!important}
+a{color:inherit;text-decoration:none}
+
+/* ════════ HEADER ════════ */
+header{position:sticky;top:0;z-index:200;background:linear-gradient(135deg,var(--card2),var(--card3));border-bottom:1px solid var(--border);padding:12px 28px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 30px rgba(0,0,0,.55)}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold-dk));color:#080d1a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex-shrink:0}
+.brand h1{font-size:16px;color:var(--gold2);font-weight:900}
+.brand p{font-size:10px;color:var(--muted);margin-top:1px}
+.hdr-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid rgba(201,162,39,.25);background:rgba(201,162,39,.08);color:var(--gold2);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700}
+.pill.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-left:5px;animation:pulse 2s infinite;vertical-align:middle}
+.btn{font-family:Cairo;border:1px solid rgba(201,162,39,.3);background:rgba(201,162,39,.1);color:var(--gold2);border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:background .2s}
+.btn:hover{background:rgba(201,162,39,.2)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+/* ════════ STICKY NAV ════════ */
+.sticky-nav{position:sticky;top:66px;z-index:190;background:rgba(8,13,26,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;pointer-events:auto}
+.sticky-nav::-webkit-scrollbar{display:none}
+.nav-a{font-family:Cairo;font-size:11px;font-weight:700;padding:9px 13px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;cursor:pointer;user-select:none;-webkit-user-select:none}
+.nav-a:hover,.nav-a.active{color:var(--gold2);border-bottom-color:var(--gold)}
+
+/* ════════ FILTER BAR ════════ */
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-lbl{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+.filter-sel{font-family:Cairo;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:var(--text);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;transition:border-color .2s}
+.filter-sel:focus{outline:none;border-color:rgba(201,162,39,.4)}
+.filter-sel option{background:var(--card2)}
+.filter-reset{font-family:Cairo;background:rgba(229,62,62,.1);border:1px solid rgba(229,62,62,.25);color:#fc8181;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-right:auto;transition:background .2s}
+.filter-reset:hover{background:rgba(229,62,62,.2)}
+.filter-active-tag{font-size:10px;color:var(--gold);background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.2);padding:2px 8px;border-radius:8px}
+
+/* ════════ LOADING + ERROR ════════ */
+.loading{min-height:80vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;z-index:1}
+.loading-box{background:rgba(15,24,40,.97);border:1px solid var(--border);border-radius:16px;padding:48px 36px;min-width:340px}
+.loading-icon{font-size:48px;margin-bottom:10px}
+.loading-title{font-size:20px;font-weight:900;color:var(--gold2);margin-top:6px}
+.loading-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.spinner{width:40px;height:40px;border:3px solid rgba(201,162,39,.2);border-top:3px solid var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin:12px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ════════ MAIN ════════ */
+main{position:relative;z-index:1;max-width:1440px;margin:auto;padding:20px 28px}
+
+/* ════════ SECTION TITLE ════════ */
+.sec-ttl{font-size:11px;font-weight:900;color:var(--gold);letter-spacing:1.6px;text-transform:uppercase;margin:20px 0 12px;display:flex;gap:8px;align-items:center}
+.sec-ttl::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--border),transparent)}
+
+/* ════════ CARD ════════ */
+.card{background:rgba(15,24,40,.97);border:1px solid var(--border);border-radius:14px}
+.card:hover{border-color:rgba(201,162,39,.26)}
+
+/* ════════ EXECUTIVE SUMMARY ════════ */
+.exec-card{padding:18px 22px;margin-bottom:18px;background:linear-gradient(135deg,rgba(201,162,39,.11),rgba(201,162,39,.04));border-color:rgba(201,162,39,.3);position:relative;overflow:hidden}
+.exec-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.exec-label{font-size:10px;color:var(--gold);font-weight:900;letter-spacing:1.4px;text-transform:uppercase}
+.exec-text{font-size:14px;line-height:1.8;font-weight:600;margin-top:6px}
+.exec-text strong{color:var(--gold2)}
+.exec-action{margin-top:10px;padding:10px 14px;background:rgba(229,62,62,.1);border:1px solid rgba(229,62,62,.25);border-radius:9px;font-size:12px;font-weight:700;color:#fc8181}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px}
+.chip.ok{background:var(--grn-dim);color:#68d391;border:1px solid rgba(56,161,105,.25)}
+.chip.danger{background:var(--red-dim);color:#fc8181;border:1px solid rgba(229,62,62,.25)}
+.chip.warn{background:var(--yel-dim);color:#f6e05e;border:1px solid rgba(214,158,46,.2)}
+.chip.info{background:var(--tel-dim);color:#81e6d9;border:1px solid rgba(49,151,149,.2)}
+.chip.purple{background:var(--pur-dim);color:#b794f4;border:1px solid rgba(124,92,191,.2)}
+
+/* ════════ KPI GRID ════════ */
+.kpi-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.kpi{padding:16px 18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.3)}
+.kpi::before{content:"";position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 14px 0 60px;opacity:.08}
+.kpi.gold::before{background:var(--gold)} .kpi.c-red::before{background:var(--red)}
+.kpi.c-orange::before{background:var(--orange)} .kpi.c-yellow::before{background:var(--yellow)}
+.kpi.c-green::before{background:var(--green)} .kpi.c-teal::before{background:var(--teal)}
+.kpi-icon{font-size:16px;margin-bottom:5px}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;letter-spacing:.3px}
+.kpi-value{font-weight:900;line-height:1;margin-bottom:3px}
+.kpi.gold .kpi-value{font-size:34px;color:var(--gold2)}
+.kpi.c-red .kpi-value{font-size:26px;color:#fc8181}
+.kpi.c-orange .kpi-value{font-size:26px;color:#f6ad55}
+.kpi.c-yellow .kpi-value{font-size:26px;color:#f6e05e}
+.kpi.c-green .kpi-value{font-size:26px;color:#68d391}
+.kpi.c-teal .kpi-value{font-size:26px;color:#81e6d9}
+.kpi-sub{font-size:10px;color:var(--muted)}
+.kpi-money{font-size:12px;color:var(--gold);font-weight:700;margin-top:6px;border-top:1px solid rgba(255,255,255,.05);padding-top:6px}
+.kpi-warn{font-size:10px;color:#fc8181;font-weight:700;margin-top:4px}
+
+/* ════════ CHARTS ════════ */
+.charts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.chart-card{padding:16px 18px;position:relative}
+.chart-card canvas{max-height:220px}
+.chart-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;color:var(--muted);font-size:12px;text-align:center;gap:8px}
+.chart-placeholder span{font-size:28px}
+
+/* ════════ TREND ════════ */
+.trend-card{padding:18px 22px;margin-bottom:18px}
+.trend-placeholder{text-align:center;padding:28px;color:var(--muted)}
+.trend-placeholder .t-icon{font-size:32px;margin-bottom:8px}
+.trend-placeholder h4{color:var(--text);font-size:14px;margin-bottom:6px}
+.trend-placeholder p{font-size:11px;line-height:1.7;max-width:500px;margin:0 auto}
+.trend-placeholder code{font-family:monospace;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;font-size:10px;color:var(--gold)}
+.trend-hint{margin-top:12px;font-size:10px;background:var(--pur-dim);border:1px solid rgba(124,92,191,.2);border-radius:8px;padding:8px 12px;color:#b794f4;text-align:right}
+.trend-comparison table{width:100%;border-collapse:collapse;font-size:12px}
+.trend-comparison th{background:rgba(255,255,255,.04);color:var(--muted);padding:7px 10px;font-weight:700;text-align:right;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px}
+.trend-comparison td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03)}
+.t-up{color:#fc8181} .t-down{color:#68d391} .t-stable{color:var(--muted)}
+
+/* ════════ TABLES (shared) ════════ */
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:rgba(255,255,255,.03);color:var(--muted);font-weight:700;padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.025);transition:background .15s}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+td{padding:8px 10px;vertical-align:middle}
+
+/* ════════ BADGES ════════ */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap}
+.b-red{background:var(--red-bg);color:#fc8181;border:1px solid rgba(229,62,62,.3)}
+.b-orange{background:var(--org-bg);color:#f6ad55;border:1px solid rgba(221,107,32,.3)}
+.b-yellow{background:var(--yel-bg);color:#f6e05e;border:1px solid rgba(214,158,46,.25)}
+.b-green{background:var(--grn-bg);color:#68d391;border:1px solid rgba(56,161,105,.3)}
+.b-teal{background:var(--tel-bg);color:#81e6d9;border:1px solid rgba(49,151,149,.3)}
+.b-purple{background:var(--pur-bg);color:#b794f4;border:1px solid rgba(124,92,191,.3)}
+
+/* ════════ ACTION PLAN ════════ */
+.action-card{padding:18px 22px;margin-bottom:18px}
+.action-card table td:first-child{width:36px}
+.pri-circle{width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.pc1{background:rgba(229,62,62,.15);color:#fc8181;border:1px solid rgba(229,62,62,.3)}
+.pc2{background:rgba(221,107,32,.15);color:#f6ad55;border:1px solid rgba(221,107,32,.3)}
+.pc3{background:rgba(214,158,46,.12);color:#f6e05e;border:1px solid rgba(214,158,46,.25)}
+.pc4{background:rgba(124,92,191,.12);color:#b794f4;border:1px solid rgba(124,92,191,.25)}
+.pc5{background:rgba(49,151,149,.12);color:#81e6d9;border:1px solid rgba(49,151,149,.25)}
+
+/* ════════ BRANCH RISK ════════ */
+.risk-card{padding:18px 22px;margin-bottom:18px}
+.risk-score{display:inline-flex;align-items:center;gap:6px}
+.risk-bar{width:60px;height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.risk-bar-fill{height:100%;border-radius:3px;transition:width .8s}
+
+/* ════════ DATA QUALITY ════════ */
+.dq-card{padding:18px 22px;margin-bottom:18px}
+.dq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.dq-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px 14px}
+.dq-item.issue{border-color:rgba(229,62,62,.25);background:rgba(229,62,62,.05)}
+.dq-item.ok{border-color:rgba(56,161,105,.2);background:rgba(56,161,105,.04)}
+.dq-count{font-size:24px;font-weight:900;margin:4px 0}
+.dq-count.issue{color:#fc8181}
+.dq-count.ok{color:#68d391}
+.dq-label{font-size:10px;color:var(--muted);font-weight:700}
+.dq-fix{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5;border-top:1px solid rgba(255,255,255,.05);padding-top:6px}
+
+/* ════════ ESCALATION ALERT ════════ */
+.esc-alert{background:linear-gradient(135deg,rgba(221,107,32,.1),rgba(221,107,32,.04));border:1px solid rgba(221,107,32,.3);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px}
+.esc-alert>span{font-size:20px;flex-shrink:0;margin-top:2px}
+.esc-alert strong{color:#f6ad55;font-size:13px;display:block;margin-bottom:4px}
+.esc-alert p{font-size:11px;color:var(--muted);line-height:1.6}
+
+/* ════════ TOP 10 ════════ */
+.top10-card{padding:18px 22px;margin-bottom:18px}
+.mini-bar-wrap{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:3px}
+.mini-bar-fill{height:100%;border-radius:2px;background:var(--gold)}
+
+/* ════════ RANKING ════════ */
+.ranking-card{padding:18px 22px;margin-bottom:18px}
+.rank-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.rank-name{font-size:12px;font-weight:600;width:130px;flex-shrink:0}
+.rank-track{flex:1;height:26px;background:rgba(255,255,255,.04);border-radius:6px;overflow:hidden}
+.rank-fill{height:100%;background:linear-gradient(90deg,var(--gold-dk),var(--gold));border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;min-width:70px;transition:width .8s}
+.rank-fill span{font-size:11px;font-weight:800;color:#080d1a;white-space:nowrap}
+.rank-side{font-size:10px;color:var(--gold);width:90px;flex-shrink:0;text-align:left}
+
+/* ════════ BRANCH CARDS ════════ */
+.branches-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.branch-card{overflow:hidden;transition:transform .2s,box-shadow .2s}
+.branch-card:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(0,0,0,.35);border-color:rgba(201,162,39,.28)}
+.branch-head{background:linear-gradient(135deg,var(--card2),var(--card3));padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.branch-rank{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--gold),var(--gold-dk));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#080d1a;flex-shrink:0}
+.branch-name{font-size:13px;font-weight:700;flex:1;line-height:1.25}
+.branch-badge{background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.2);color:var(--gold2);font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;white-space:nowrap}
+.branch-body{padding:12px 16px}
+.b-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.b-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:8px 10px}
+.b-stat-lbl{font-size:9px;color:var(--muted);margin-bottom:1px}
+.b-stat-val{font-size:13px;font-weight:800;color:var(--gold2)}
+.b-prog{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:10px;overflow:hidden}
+.b-prog-fill{height:100%;background:linear-gradient(90deg,var(--gold-dk),var(--gold));border-radius:2px}
+.sp-btn{width:100%;background:rgba(201,162,39,.06);border:1px solid rgba(201,162,39,.15);color:var(--gold);font-family:Cairo;font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .2s}
+.sp-btn:hover{background:rgba(201,162,39,.11)}
+.sp-wrap{display:none;margin-top:9px}
+.sp-wrap.open{display:block}
+
+/* ════════ WHATSAPP ════════ */
+.wa-section{background:rgba(15,24,40,.97);border:1px solid rgba(37,211,102,.18);border-radius:14px;padding:18px 22px;margin-bottom:18px}
+.wa-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.wa-hdr h3{font-size:14px;font-weight:800;color:#25d366}
+.tab-group{display:flex;gap:6px;margin-bottom:12px}
+.tab-btn{font-family:Cairo;font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid rgba(201,162,39,.2);background:rgba(201,162,39,.04);color:var(--muted);cursor:pointer;transition:all .2s}
+.tab-btn.active{background:rgba(201,162,39,.14);color:var(--gold2);border-color:rgba(201,162,39,.4)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.wa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.wa-card{background:rgba(37,211,102,.04);border:1px solid rgba(37,211,102,.14);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.wa-card:hover{border-color:rgba(37,211,102,.3)}
+.wa-card.wide{grid-column:1/-1}
+.wa-head{background:rgba(37,211,102,.08);padding:9px 13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(37,211,102,.1)}
+.wa-name{font-size:12px;font-weight:700;color:#25d366}
+.copy-btn{font-family:Cairo;font-size:10px;font-weight:700;padding:3px 9px;border-radius:7px;background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.25);cursor:pointer;transition:background .2s;white-space:nowrap}
+.copy-btn:hover{background:rgba(37,211,102,.22)}
+.copy-btn.copied{color:#68d391;background:rgba(37,211,102,.25)}
+.wa-body{padding:11px 13px;font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;max-height:200px;overflow-y:auto;direction:rtl}
+.wa-card.wide .wa-body{max-height:none}
+
+/* ════════ FOOTER ════════ */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:12px 28px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted)}
+
+/* ════════ RESPONSIVE ════════ */
+@media(max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .charts-grid{grid-template-columns:repeat(2,1fr)}
+  .branches-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  main{padding:14px 14px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-grid,.branches-grid,.dq-grid,.wa-grid{grid-template-columns:1fr}
+  header{flex-direction:column;gap:8px;align-items:flex-end}
+  .filter-bar{gap:7px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="brand">
+    <div class="logo">ه</div>
+    <div>
+      <h1>هافانا للأقمشة</h1>
+      <p>لوحة أوامر القص المعلقة — CEO Executive Dashboard V2</p>
+    </div>
+  </div>
+  <div class="hdr-meta">
+    <span class="pill live" id="lastUpdate">جاري التحميل...</span>
+    <span class="pill" id="periodTag">—</span>
+    <button class="btn" onclick="loadData()">🔄 تحديث</button>
+  </div>
+</header>
+
+<!-- ══ STICKY NAV ══ -->
+<nav class="sticky-nav">
+  <span class="nav-a" onclick="scrollToSection('sec-exec', this)">📋 الخلاصة</span>
+  <span class="nav-a" onclick="scrollToSection('sec-kpis', this)">📊 KPIs</span>
+  <span class="nav-a" onclick="scrollToSection('sec-charts', this)">📈 الرسوم</span>
+  <span class="nav-a" onclick="scrollToSection('sec-trend', this)">📉 Trend</span>
+  <span class="nav-a" onclick="scrollToSection('sec-action', this)">🎯 الإجراءات</span>
+  <span class="nav-a" onclick="scrollToSection('sec-risk', this)">⚠️ Risk Score</span>
+  <span class="nav-a" onclick="scrollToSection('sec-dq', this)">🔍 جودة البيانات</span>
+  <span class="nav-a" onclick="scrollToSection('sec-top10', this)">🏅 Top 10</span>
+  <span class="nav-a" onclick="scrollToSection('sec-branches', this)">🏢 الفروع</span>
+  <span class="nav-a" onclick="scrollToSection('sec-wa', this)">💬 واتساب</span>
+</nav>
+
+<!-- ══ LOADING ══ -->
+<div id="loading" class="loading">
+  <div class="loading-box">
+    <div class="loading-icon">📊</div>
+    <div class="spinner"></div>
+    <div class="loading-title">تحميل لوحة التحكم</div>
+    <div class="loading-sub">جاري الاتصال بـ Google Sheets...</div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app" class="hidden">
+<main>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <span class="filter-lbl">🔽 فلترة:</span>
+  <select class="filter-sel" id="f-branch" onchange="onFilterChange()">
+    <option value="all">كل الفروع</option>
+  </select>
+  <select class="filter-sel" id="f-person" onchange="onFilterChange()">
+    <option value="all">كل المناديب</option>
+  </select>
+  <select class="filter-sel" id="f-aging" onchange="onFilterChange()">
+    <option value="all">كل الأعمار</option>
+    <option value="new">🟢 0–9 أيام (جديد)</option>
+    <option value="warn">🟡 10–19 يوم (تحذير)</option>
+    <option value="watch">🟠 20–29 يوم (تصعيد)</option>
+    <option value="high">🔴 30+ يوم (حرج)</option>
+  </select>
+  <select class="filter-sel" id="f-risk" onchange="onFilterChange()">
+    <option value="all">كل مستويات الخطر</option>
+    <option value="critical">🔴 Critical</option>
+    <option value="high">🟠 High</option>
+    <option value="medium">🟡 Medium</option>
+    <option value="low">🟢 Low</option>
+  </select>
+  <span id="activeFilterTag" class="filter-active-tag hidden">فلتر نشط</span>
+  <button class="filter-reset" onclick="resetFilters()">✕ إعادة ضبط</button>
+</div>
+
+<!-- Executive Summary -->
+<div class="sec-ttl" id="sec-exec">📋 الخلاصة التنفيذية</div>
+<div id="execDiv"></div>
+
+<!-- KPIs -->
+<div class="sec-ttl" id="sec-kpis">📊 مؤشرات الأداء — Aging Buckets</div>
+<div class="kpi-grid" id="kpisDiv"></div>
+
+<!-- Escalation Alert -->
+<div id="escalationDiv"></div>
+
+<!-- Charts -->
+<div class="sec-ttl" id="sec-charts">📈 الرسوم البيانية</div>
+<div class="charts-grid" id="chartsRow1">
+  <div class="card chart-card"><div class="sec-ttl" style="margin-top:0">توزيع الأعمار</div><canvas id="agingChart"></canvas></div>
+  <div class="card chart-card"><div class="sec-ttl" style="margin-top:0">طلبات الفروع</div><canvas id="branchOrdersChart"></canvas></div>
+  <div class="card chart-card"><div class="sec-ttl" style="margin-top:0">قيمة الفروع</div><canvas id="branchAmountChart"></canvas></div>
+</div>
+<div class="charts-grid" id="chartsRow2">
+  <div class="card chart-card"><div class="sec-ttl" style="margin-top:0">أعلى 10 مناديب</div><canvas id="top10Chart"></canvas></div>
+  <div class="card chart-card"><div class="sec-ttl" style="margin-top:0">Branch Risk Score</div><canvas id="riskChart"></canvas></div>
+  <div class="card chart-card" id="trendChartCard"><div class="sec-ttl" style="margin-top:0">Trend (اتجاه الأداء)</div><div id="trendChartPlaceholder" class="chart-placeholder"><span>📉</span><p>البيانات التاريخية غير متوفرة حاليًا</p></div><canvas id="trendChart" class="hidden"></canvas></div>
+</div>
+
+<!-- Trend Section -->
+<div class="sec-ttl" id="sec-trend">📉 Trend — مقارنة اليوم بالأمس</div>
+<div id="trendDiv"></div>
+
+<!-- CEO Action Plan -->
+<div class="sec-ttl" id="sec-action">🎯 CEO Action Plan — اليوم</div>
+<div id="actionDiv"></div>
+
+<!-- Branch Risk -->
+<div class="sec-ttl" id="sec-risk">⚠️ Branch Risk Score — ترتيب الخطر</div>
+<div id="riskDiv"></div>
+
+<!-- Data Quality -->
+<div class="sec-ttl" id="sec-dq">🔍 جودة البيانات — Data Quality</div>
+<div id="dqDiv"></div>
+
+<!-- Top 10 -->
+<div class="sec-ttl" id="sec-top10">🏅 أعلى المناديب</div>
+<div id="top10Div"></div>
+
+<!-- Branch Ranking -->
+<div class="sec-ttl" id="sec-ranking">📊 ترتيب الفروع</div>
+<div class="card ranking-card" id="rankingDiv"></div>
+
+<!-- Branch Cards -->
+<div class="sec-ttl" id="sec-branches">🏢 تفصيل الفروع</div>
+<div class="branches-grid" id="branchesDiv"></div>
+
+<!-- WhatsApp -->
+<div class="sec-ttl" id="sec-wa">💬 رسائل واتساب — جاهزة للإرسال</div>
+<div id="waDiv"></div>
+
+</main>
+</div><!-- end app -->
+
+<footer>
+  <span>📌 هافانا للأقمشة | 7 فروع | Odoo 18 POS | CEO Dashboard V2</span>
+  <span id="footerText">تحديث تلقائي كل 10 دقائق</span>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════
+   CONFIG — PRESERVED FROM V1 (DO NOT MODIFY API_URL)
+════════════════════════════════════════════════════ */
+const API_URL = "https://script.google.com/macros/s/AKfycbyXmTx-5oCicrIv2Apzf_0aWULtyLL0dXoBC_Ed3ClXQzCBz-IaIcu0b6hkAbtJMlW6/exec";
+const REFRESH_MS = 10 * 60 * 1000;
+/* ════════ STATE ════════ */
+let rawRows = [], filteredRows = [], metrics = {}, historicalData = null, timer = null;
+let charts = {};
+let filters = { branch: 'all', person: 'all', aging: 'all', risk: 'all' };
+let branchRiskMap = {}; // branch name → risk level (computed on raw data for risk filter)
+/* V2+: API-level totals (more accurate than row-level sums) */
+let apiBranchTotals = [];  // from data.branchTotals
+let apiGrandTotal   = null; // from data.grandTotal
+
+/* ════════ FORMATTERS ════════ */
+const fmt   = n => (Number(n)||0).toLocaleString('en-US');
+const money = n => '﷼ ' + (Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const pct   = n => (Number(n)||0).toFixed(1) + '%';
+const today = () => new Date().toLocaleDateString('ar-EG', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+/* ════════ HELPERS — PRESERVED FROM V1 ════════ */
+function clean(v){return String(v??'').replace(/\s+/g,' ').trim()}
+function amount(v){return Number(String(v??'').replace(/[^\d.-]/g,''))||0}
+function isUnnamed(n){n=clean(n).toLowerCase();return !n||n==='none'||n==='null'||n.includes('بدون')||n==='-'}
+function bName(v){return clean(v).replace(/\s*\([^)]*\)\s*/g,'').replace(/Havana\s*/i,'').trim()||'غير محدد'}
+
+/* Priority logic — PRESERVED FROM V1 */
+function priority(days, p) {
+  p = clean(p);
+  if (days >= 30 || p.includes('30') || p.includes('خطر')) return {key:'high',   label:'🔴 حرج',      cls:'b-red'};
+  if (days >= 20 || p.includes('20'))                      return {key:'watch',  label:'🟠 تصعيد',    cls:'b-orange'};
+  if (days >= 10 || p.includes('10') || p.includes('تحت')) return {key:'warn',   label:'🟡 تحذير',    cls:'b-yellow'};
+  return                                                           {key:'new',    label:'🟢 جديد',     cls:'b-green'};
+}
+
+/* Normalize row — PRESERVED FROM V1 (field names unchanged) */
+function normalize(r) {
+  return {
+    branch:        bName(r.branch),
+    salesPerson:   clean(r.salesPerson) || 'بدون مندوب',
+    requests:      Number(r.requests) || 0,
+    firstOrderDate:clean(r.firstOrderDate),
+    daysPending:   Number(r.daysPending) || 0,
+    daysPendingText:clean(r.daysPendingText),
+    priority:      clean(r.priority),
+    amount:        amount(r.amount),
+    reviewDate:    clean(r.reviewDate)
+  };
+}
+
+function formatDate(s){if(!s)return'';const d=new Date(s);return isNaN(d)?s:d.toLocaleDateString('en-GB')}
+
+/* normalizeBranchTotal — same bName normalization as rows for consistent matching */
+function normalizeBranchTotal(r) {
+  return {
+    branch:     bName(r.branch || r.Branch || ''),
+    requests:   Number(r.requests || r.Requests || 0) || 0,
+    amount:     amount(r.amount   || r.Amount   || 0),
+    reviewDate: clean(r.reviewDate || r.ReviewDate || '')
+  };
+}
+
+/* ════════ DATA LOADING — CORE PRESERVED FROM V1 ════════ */
+async function loadData() {
+  document.getElementById('lastUpdate').textContent = 'جاري التحديث...';
+  try {
+    // Google Apps Script uses redirects — redirect:'follow' is required
+    const res = await fetch(API_URL + '?t=' + Date.now(), {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — تعذر الوصول إلى Apps Script');
+    const data = await res.json();
+
+    // PRESERVED: extract rows (field names unchanged)
+    rawRows = (Array.isArray(data) ? data : (data.rows || []))
+      .map(normalize)
+      .filter(r => r.branch
+                && !r.branch.toLowerCase().startsWith('total')  // catches 'Total' AND 'Total cutting Orders'
+                && r.branch !== 'غير محدد'
+                && !r.branch.toLowerCase().includes('grand')
+                && !r.branch.toLowerCase().includes('إجمالي'));
+
+    // If rawRows empty but branchTotals exist, don't throw — we can still render
+    if (rawRows.length === 0 && apiBranchTotals.length === 0 && !apiGrandTotal) {
+      throw new Error('لا توجد بيانات في الاستجابة — تحقق من Apps Script');
+    }
+
+    // V2: extract branchTotals and grandTotal from API
+    apiBranchTotals = Array.isArray(data.branchTotals)
+      ? data.branchTotals
+          .map(normalizeBranchTotal)
+          .filter(b => b.branch
+                    && b.branch !== 'غير محدد'
+                    && !b.branch.toLowerCase().startsWith('total')
+                    && !b.branch.toLowerCase().includes('إجمالي'))
+      : [];
+
+    apiGrandTotal = data.grandTotal || null;
+
+    // V2: extract historical/snapshot data if API returns it
+    historicalData = data.historicalData || data.snapshots || data.dailySnapshots || null;
+
+    // Compute branch risk map on full raw data (for risk-level filter)
+    // Use apiBranchTotals requests when available for more accurate risk scoring
+    const fullMetrics = computeBranchRisk(rawRows);
+    branchRiskMap = {};
+    fullMetrics.forEach(b => { branchRiskMap[b.branch] = (b.level || b.riskLevel || 'low').toLowerCase(); });
+    // Also add any branches in apiBranchTotals not in rawRows (with 'low' default)
+    apiBranchTotals.forEach(b => {
+      if (b.branch && !branchRiskMap[b.branch]) branchRiskMap[b.branch] = 'low';
+    });
+
+    // IMPORTANT: show app BEFORE rendering so Chart.js canvases have dimensions
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+
+    // Populate filters then render
+    populateFilters();
+    applyFiltersAndRender();
+
+    // Update timestamps
+    const t = new Date().toLocaleString('ar-EG');
+    document.getElementById('lastUpdate').textContent = 'آخر تحديث: ' + t;
+    document.getElementById('footerText').textContent = 'آخر تحديث: ' + t + ' | تحديث تلقائي كل 10 دقائق';
+
+    // Auto-refresh preserved from V1
+    if (timer) clearInterval(timer);
+    timer = setInterval(loadData, REFRESH_MS);
+
+  } catch(e) {
+    const isCors = e.message === 'Failed to fetch';
+    document.getElementById('loading').innerHTML =
+      '<div class="loading-box">' +
+      '<div class="loading-icon">\u274c</div>' +
+      '<div class="loading-title">\u062e\u0637\u0623 \u0641\u064a \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a</div>' +
+      '<div class="loading-sub" style="color:#fc8181;margin-top:6px">' + e.message + '</div>' +
+      (isCors ?
+        '<div style="margin-top:14px;background:rgba(221,107,32,.1);border:1px solid rgba(221,107,32,.3);border-radius:10px;padding:12px;font-size:11px;color:#f6ad55;text-align:right;line-height:1.7">' +
+        '<strong>\u0627\u0644\u0623\u0633\u0628\u0627\u0628 \u0627\u0644\u0634\u0627\u0626\u0639\u0629:</strong><br>' +
+        '\u2460 \u0627\u0644\u0645\u0644\u0641 \u0645\u0641\u062a\u0648\u062d \u0645\u062d\u0644\u064a\u064b\u0627 (file://) \u2014 \u064a\u062c\u0628 \u0631\u0641\u0639\u0647 \u0639\u0644\u0649 Netlify<br>' +
+        '\u2461 Apps Script \u063a\u064a\u0631 \u0645\u0646\u0634\u0648\u0631 \u0628\u0635\u0644\u0627\u062d\u064a\u0629 Anyone<br>' +
+        '\u2462 \u0645\u0634\u0643\u0644\u0629 \u0641\u064a \u0627\u062a\u0635\u0627\u0644 \u0627\u0644\u0634\u0628\u0643\u0629' +
+        '</div>' : '') +
+      '<button class="btn" style="margin-top:14px" onclick="loadData()">\ud83d\udd04 \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629</button>' +
+      '</div>';
+  }
+}
+
+/* ════════ FILTER SYSTEM ════════ */
+function populateFilters() {
+  // Include branch names from apiBranchTotals as well as rawRows
+  const branchSet = new Set(rawRows.map(r => r.branch));
+  apiBranchTotals.forEach(b => { if(b.branch) branchSet.add(b.branch); });
+  const branches = [...branchSet].filter(Boolean).sort();
+  const persons  = [...new Set(rawRows.map(r => r.salesPerson))].sort();
+  const bf = document.getElementById('f-branch');
+  const pf = document.getElementById('f-person');
+  const cur_b = bf.value; const cur_p = pf.value;
+  bf.innerHTML = '<option value="all">كل الفروع</option>' + branches.map(b=>`<option value="${b}">${b}</option>`).join('');
+  pf.innerHTML = '<option value="all">كل المناديب</option>' + persons.map(p=>`<option value="${p}">${p}</option>`).join('');
+  bf.value = cur_b; pf.value = cur_p;
+}
+
+function onFilterChange() {
+  filters.branch = document.getElementById('f-branch').value;
+  filters.person = document.getElementById('f-person').value;
+  filters.aging  = document.getElementById('f-aging').value;
+  filters.risk   = document.getElementById('f-risk').value;
+  const active = Object.values(filters).some(v => v !== 'all');
+  document.getElementById('activeFilterTag').classList.toggle('hidden', !active);
+  applyFiltersAndRender();
+}
+
+function resetFilters() {
+  filters = {branch:'all', person:'all', aging:'all', risk:'all'};
+  document.getElementById('f-branch').value = 'all';
+  document.getElementById('f-person').value = 'all';
+  document.getElementById('f-aging').value  = 'all';
+  document.getElementById('f-risk').value   = 'all';
+  document.getElementById('activeFilterTag').classList.add('hidden');
+  applyFiltersAndRender();
+}
+
+function applyFiltersAndRender() {
+  filteredRows = rawRows.slice();
+
+  // Risk level filter
+  if (filters.risk !== 'all') {
+    const qualBranches = Object.entries(branchRiskMap || {})
+      .filter(([_,lvl]) => lvl === filters.risk)
+      .map(([b]) => b);
+    if (qualBranches.length > 0) {
+      filteredRows = filteredRows.filter(r => qualBranches.includes(r.branch));
+    }
+  }
+
+  // Branch filter
+  if (filters.branch !== 'all') filteredRows = filteredRows.filter(r => r.branch === filters.branch);
+
+  // Salesperson filter
+  if (filters.person !== 'all') filteredRows = filteredRows.filter(r => r.salesPerson === filters.person);
+
+  // Aging filter
+  if (filters.aging !== 'all') {
+    filteredRows = filteredRows.filter(r => {
+      const d = r.daysPending;
+      if (filters.aging === 'new')   return d < 10;
+      if (filters.aging === 'warn')  return d >= 10 && d < 20;
+      if (filters.aging === 'watch') return d >= 20 && d < 30;
+      if (filters.aging === 'high')  return d >= 30;
+      return true;
+    });
+  }
+
+  buildMetrics(filteredRows);
+  renderAll();
+}
+
+/* ════════ RISK SCORE ════════ */
+function calcRiskScore(b, totalRequests, totalAmount) {
+  const cr  = b.criticalRequests  || 0;
+  const esc = b.escalationRequests || 0;
+  const un  = b.unnamedRequests   || 0;
+  const s20 = b.soon20            || 0;
+  let score = 0;
+  score += Math.min(b.maxDays / 60, 1)                         * 30; // max days pressure
+  score += (b.requests ? cr  / b.requests : 0)                 * 25; // critical ratio
+  score += (b.requests ? esc / b.requests : 0)                 * 15; // escalation ratio
+  score += (totalAmount ? b.amount / totalAmount : 0)          * 20; // amount share
+  score += (b.requests ? un  / b.requests : 0)                 * 10; // unnamed ratio
+  return Math.min(Math.round(score), 100);
+}
+
+function riskLevel(score) {
+  if (score >= 75) return {level:'Critical', cls:'b-red',    color:'#fc8181'};
+  if (score >= 50) return {level:'High',     cls:'b-orange', color:'#f6ad55'};
+  if (score >= 25) return {level:'Medium',   cls:'b-yellow', color:'#f6e05e'};
+  return                  {level:'Low',      cls:'b-green',  color:'#68d391'};
+}
+
+function computeBranchRisk(rows) {
+  const byB = {};
+  rows.filter(r => r.requests > 0).forEach(r => {
+    if (!byB[r.branch]) byB[r.branch] = {branch:r.branch,requests:0,amount:0,maxDays:0,criticalRequests:0,escalationRequests:0,unnamedRequests:0,soon20:0};
+    const b = byB[r.branch];
+    b.requests  += r.requests; b.amount  += r.amount;
+    b.maxDays    = Math.max(b.maxDays, r.daysPending);
+    if (r.daysPending >= 30) b.criticalRequests  += r.requests;
+    if (r.daysPending >= 20 && r.daysPending < 30) b.escalationRequests += r.requests;
+    if (isUnnamed(r.salesPerson)) b.unnamedRequests += r.requests;
+    if (r.daysPending >= 13 && r.daysPending < 20) b.soon20 += r.requests;
+  });
+  const total = Object.values(byB).reduce((s,b)=>s+b.requests,0);
+  const totalAmt = Object.values(byB).reduce((s,b)=>s+b.amount,0);
+  return Object.values(byB).map(b => {
+    const score = calcRiskScore(b, total, totalAmt);
+    const rl = riskLevel(score);
+    // 'level' is the property name from riskLevel() — used as b.level throughout
+    return {...b, score, riskLevel: rl.level, ...rl};
+  }).sort((a,b) => b.score - a.score);
+}
+
+/* ════════ SALESPERSON ACTION SUGGESTION ════════ */
+function spAction(p) {
+  if (p.criticalOrders > 0)    return {text:'تصعيد لمدير الفرع اليوم',  cls:'b-red'};
+  if (p.escalationOrders > 0)  return {text:'متابعة خلال 24 ساعة',       cls:'b-orange'};
+  if (isUnnamed(p.name))       return {text:'تحديث بيانات Odoo',          cls:'b-teal'};
+  if (p.maxDays >= 10)         return {text:'مراجعة مع المندوب',          cls:'b-yellow'};
+  return                              {text:'متابعة تشغيلية عادية',       cls:'b-green'};
+}
+
+/* ════════ BUILD METRICS ════════ */
+function buildMetrics(rows) {
+  const active = rows.filter(r => r.requests > 0);
+  const byB = {}, byP = {};
+
+  // ── Step 1: Process rows for detail fields ──────────────────────
+  let rowsTotalReq=0, rowsTotalAmt=0;
+  let unnamedReq=0, unnamedAmt=0;
+  let criticalReq=0, watchReq=0, warnReq=0, newReq=0, soon20=0, maxDays=0;
+  let noAmountReq=0, noDateReq=0, zeroOldReq=0, noSPReq=0;
+
+  active.forEach(r => {
+    const pr = priority(r.daysPending, r.priority);
+    rowsTotalReq += r.requests;
+    rowsTotalAmt += r.amount;
+    maxDays       = Math.max(maxDays, r.daysPending);
+    if (pr.key==='high')       criticalReq += r.requests;
+    else if (pr.key==='watch') watchReq    += r.requests;
+    else if (pr.key==='warn')  warnReq     += r.requests;
+    else                       newReq      += r.requests;
+    if (r.daysPending >= 13 && r.daysPending < 20) soon20 += r.requests;
+    if (isUnnamed(r.salesPerson))  { unnamedReq += r.requests; unnamedAmt += r.amount; }
+    if (!r.amount || r.amount===0) noAmountReq += r.requests;
+    if (!r.reviewDate)             noDateReq   += r.requests;
+
+    // byB: detail fields only (maxDays, critical, escalation, unnamed, soon20)
+    if (!byB[r.branch]) byB[r.branch] = {
+      branch:r.branch, requests:0, amount:0,
+      maxDays:0, criticalRequests:0, escalationRequests:0,
+      unnamedRequests:0, soon20:0, rows:[]
+    };
+    const b = byB[r.branch];
+    b.requests += r.requests; b.amount += r.amount;
+    b.maxDays   = Math.max(b.maxDays, r.daysPending);
+    if (r.daysPending >= 30)               b.criticalRequests   += r.requests;
+    if (r.daysPending >= 20 && r.daysPending < 30) b.escalationRequests += r.requests;
+    if (isUnnamed(r.salesPerson))          b.unnamedRequests    += r.requests;
+    if (r.daysPending >= 13 && r.daysPending < 20) b.soon20     += r.requests;
+    b.rows.push(r);
+
+    // byP: salesperson breakdown (always from rows)
+    const k = r.salesPerson + '|' + r.branch;
+    if (!byP[k]) byP[k] = {name:r.salesPerson,branch:r.branch,requests:0,amount:0,maxDays:0,criticalOrders:0,escalationOrders:0};
+    const p = byP[k];
+    p.requests += r.requests; p.amount += r.amount;
+    p.maxDays   = Math.max(p.maxDays, r.daysPending);
+    if (r.daysPending >= 30)               p.criticalOrders   += r.requests;
+    if (r.daysPending >= 20 && r.daysPending < 30) p.escalationOrders += r.requests;
+  });
+
+  zeroOldReq = rows.filter(r => r.requests === 0 && r.daysPending >= 30).length;
+  noSPReq    = rows.filter(r => isUnnamed(r.salesPerson)).length;
+
+  // ── Step 2: Determine whether any filter is active ──────────────
+  const anyFilter = Object.values(filters).some(v => v !== 'all');
+
+  // ── Step 3: Choose totalRequests / totalAmount / reviewDate ──────
+  let totalRequests, totalAmount, reviewDate;
+
+  if (!anyFilter && apiGrandTotal && Number(apiGrandTotal.requests) > 0) {
+    // Authoritative API grand total — most accurate
+    totalRequests = Number(apiGrandTotal.requests);
+    totalAmount   = Number(apiGrandTotal.amount)   || rowsTotalAmt;
+    reviewDate    = formatDate(apiGrandTotal.reviewDate || rows[0]?.reviewDate || '');
+  } else if (!anyFilter && apiBranchTotals.length > 0) {
+    // Fallback: sum branch totals from API
+    totalRequests = apiBranchTotals.reduce((s,b) => s + b.requests, 0);
+    totalAmount   = apiBranchTotals.reduce((s,b) => s + b.amount,   0);
+    reviewDate    = formatDate(apiBranchTotals[0]?.reviewDate || rows[0]?.reviewDate || '');
+  } else {
+    // Filter active OR no API totals — compute from current rows
+    totalRequests = rowsTotalReq;
+    totalAmount   = rowsTotalAmt;
+    reviewDate    = formatDate(rows[0]?.reviewDate || '');
+  }
+
+  // ── Step 4: Build branches list ──────────────────────────────────
+  let branches;
+  const useApiBranches = !anyFilter && apiBranchTotals.length > 0;
+
+  if (useApiBranches) {
+    // Merge API branch totals (accurate) with byB detail fields (from rows)
+    branches = apiBranchTotals.map(bt => {
+      const det = byB[bt.branch] || {maxDays:0,criticalRequests:0,escalationRequests:0,unnamedRequests:0,soon20:0,rows:[]};
+      const merged = {
+        branch:             bt.branch,
+        requests:           bt.requests,    // ← accurate from API
+        amount:             bt.amount,      // ← accurate from API
+        maxDays:            det.maxDays,
+        criticalRequests:   det.criticalRequests,
+        escalationRequests: det.escalationRequests,
+        unnamedRequests:    det.unnamedRequests,
+        soon20:             det.soon20,
+        rows:               det.rows || []
+      };
+      const score = calcRiskScore(merged, totalRequests, totalAmount);
+      const rl    = riskLevel(score);
+      return {...merged, avg: merged.requests ? merged.amount/merged.requests : 0, score, ...rl, riskLevel: rl.level};
+    }).sort((a,b) => b.requests - a.requests);
+  } else {
+    // Fallback: compute branches from rows (filter mode or no branchTotals)
+    branches = Object.values(byB).map(b => {
+      const score = calcRiskScore(b, totalRequests, totalAmount);
+      const rl    = riskLevel(score);
+      return {...b, avg: b.requests ? b.amount/b.requests : 0, score, ...rl, riskLevel: rl.level};
+    }).sort((a,b) => b.requests - a.requests);
+  }
+
+  const branchesByRisk = [...branches].sort((a,b) => b.score - a.score);
+
+  const people = Object.values(byP).map(p => ({
+    ...p, avg: p.requests ? p.amount/p.requests : 0
+  })).sort((a,b) => b.requests - a.requests);
+
+  metrics = {
+    active, totalRequests, totalAmount, maxDays,
+    criticalReq, watchReq, warnReq, newReq, soon20,
+    unnamedReq, unnamedAmt,
+    noAmountReq, noDateReq, zeroOldReq, noSPReq,
+    branches, branchesByRisk, people,
+    reviewDate,
+    // expose source for debugging
+    _source: useApiBranches ? 'api' : 'rows',
+    _apiGrandTotal: apiGrandTotal
+  };
+
+  // Debug console logs (as requested)
+  console.log('API grandTotal:', apiGrandTotal);
+  console.log('API branchTotals:', apiBranchTotals);
+  console.log('Final metrics.totalRequests:', metrics.totalRequests);
+  console.log('Source:', metrics._source);
+}
+
+/* ════════ RENDER ALL ════════ */
+function renderAll() {
+  const fns = [renderPeriod, renderExec, renderKPIs, renderEscalation,
+               renderTrend, renderActionPlan, renderRisk,
+               renderDQ, renderTop10, renderRanking, renderBranches,
+               renderWhatsApp, updateCharts];
+  fns.forEach(fn => {
+    try { fn(); }
+    catch(err) { console.error(fn.name + ' failed:', err); }
+  });
+}
+
+/* ════════ EXECUTIVE SUMMARY ════════ */
+function renderExec() {
+  const t  = metrics.totalRequests || 1;
+  const top = metrics.branches[0] || {};
+  const topPerson = metrics.people[0] || {};
+  const upct = metrics.totalRequests ? metrics.unnamedReq/metrics.totalRequests*100 : 0;
+  const hasCritical = metrics.criticalReq > 0;
+
+  const actionText = hasCritical
+    ? `يوجد ${fmt(metrics.criticalReq)} أمر حرج (30+ يوم) يستوجب تصعيد فوري — تواصل مع مدير ${top.branch||'—'} اليوم.`
+    : `لا يوجد خطر عالي حاليًا. ${fmt(metrics.soon20)} طلب ستتجاوز 20 يومًا خلال أسبوع — يُنصح بالمراجعة العاجلة.`;
+
+  document.getElementById('execDiv').innerHTML = `
+    <div class="card exec-card">
+      <div class="exec-label">📋 الخلاصة التنفيذية — ${today()}</div>
+      <div class="exec-text">
+        يوجد <strong>${fmt(metrics.totalRequests)} أمر قص معلق</strong> بقيمة إجمالية
+        <strong>${money(metrics.totalAmount)}</strong>.
+        ${hasCritical ? `<span style="color:#fc8181"><strong>${fmt(metrics.criticalReq)} طلب حرج (30+ يوم)</strong> يحتاج تصعيداً فورياً.</span>` : 'لا توجد أوامر خطر عالي حاليًا.'}
+        أعلى ضغط تشغيلي في <strong>${top.branch||'—'}</strong>
+        (${fmt(top.requests)} طلب / ${money(top.amount)}).
+        أعلى مندوب: <strong>${topPerson.name||'—'}</strong> (${fmt(topPerson.requests)} طلب في ${topPerson.branch||'—'}).
+        يوجد <strong>${fmt(metrics.unnamedReq)} طلب بدون مندوب</strong> بنسبة ${pct(upct)}.
+        آخر مراجعة: <strong>${metrics.reviewDate||'—'}</strong>.
+      </div>
+      <div class="exec-action">⚡ الإجراء المطلوب اليوم: ${actionText}</div>
+      <div class="chips">
+        <span class="chip ${hasCritical?'danger':'ok'}">${hasCritical?'🔴 '+fmt(metrics.criticalReq)+' حرج':'✅ 0 خطر عالي'}</span>
+        <span class="chip warn">⏱️ ${fmt(metrics.soon20)} ستتجاوز 20 يوم</span>
+        <span class="chip info">🔍 ${fmt(metrics.unnamedReq)} بدون مندوب</span>
+        <span class="chip purple">🏆 ${top.branch||'—'} = أعلى ضغط</span>
+        <span class="chip ${hasCritical?'danger':'ok'}">${top.level||'—'} Risk Score</span>
+      </div>
+    </div>`;
+}
+
+/* ════════ KPI CARDS (AGING BUCKETS) ════════ */
+function renderKPIs() {
+  const t = metrics.totalRequests || 1;
+  document.getElementById('kpisDiv').innerHTML = `
+    <div class="card kpi gold">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">إجمالي أوامر القص المعلقة</div>
+      <div class="kpi-value">${fmt(metrics.totalRequests)}</div>
+      <div class="kpi-sub">${metrics.branches.length} فروع | ${metrics.people.length} مندوب</div>
+      <div class="kpi-money">${money(metrics.totalAmount)}</div>
+    </div>
+    <div class="card kpi c-green">
+      <div class="kpi-icon">🟢</div>
+      <div class="kpi-label">جديد — 0–9 أيام</div>
+      <div class="kpi-value">${fmt(metrics.newReq)}</div>
+      <div class="kpi-sub">${pct(metrics.newReq/t*100)} من الإجمالي</div>
+    </div>
+    <div class="card kpi c-yellow">
+      <div class="kpi-icon">🟡</div>
+      <div class="kpi-label">تحذير — 10–19 يوم</div>
+      <div class="kpi-value">${fmt(metrics.warnReq)}</div>
+      <div class="kpi-sub">${pct(metrics.warnReq/t*100)} من الإجمالي</div>
+    </div>
+    <div class="card kpi c-orange">
+      <div class="kpi-icon">🟠</div>
+      <div class="kpi-label">تصعيد — 20–29 يوم</div>
+      <div class="kpi-value">${fmt(metrics.watchReq)}</div>
+      <div class="kpi-sub">${pct(metrics.watchReq/t*100)} من الإجمالي</div>
+      ${metrics.watchReq > 0 ? '<div class="kpi-warn">⚡ مراجعة عاجلة مطلوبة</div>' : ''}
+    </div>
+    <div class="card kpi c-red">
+      <div class="kpi-icon">🔴</div>
+      <div class="kpi-label">حرج — 30+ يوم</div>
+      <div class="kpi-value">${fmt(metrics.criticalReq)}</div>
+      <div class="kpi-sub">${pct(metrics.criticalReq/t*100)} من الإجمالي</div>
+      ${metrics.criticalReq > 0 ? '<div class="kpi-warn">⚠️ تصعيد فوري مطلوب</div>' : ''}
+    </div>
+    <div class="card kpi c-teal">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-label">ستتجاوز 20 يوم / أسبوع</div>
+      <div class="kpi-value">${fmt(metrics.soon20)}</div>
+      <div class="kpi-sub">الأولوية للمتابعة السريعة</div>
+    </div>`;
+}
+
+/* ════════ ESCALATION ALERT ════════ */
+function renderEscalation() {
+  if (metrics.criticalReq === 0 && metrics.watchReq === 0 && metrics.soon20 === 0) {
+    document.getElementById('escalationDiv').innerHTML = '';
+    return;
+  }
+  const top3 = metrics.branches.filter(b => b.criticalRequests > 0 || b.escalationRequests > 0 || b.soon20 > 0).slice(0,3);
+  document.getElementById('escalationDiv').innerHTML = `
+    <div class="esc-alert">
+      <span>⏱️</span>
+      <div>
+        <strong>تحذير التصعيد — مراجعة عاجلة مطلوبة</strong>
+        <p>
+          ${metrics.criticalReq > 0 ? fmt(metrics.criticalReq)+' طلب حرج (30+ يوم) يستلزم تصعيداً فورياً. ' : ''}
+          ${metrics.watchReq > 0 ? fmt(metrics.watchReq)+' طلب في نطاق التصعيد (20-29 يوم). ' : ''}
+          ${metrics.soon20 > 0 ? fmt(metrics.soon20)+' طلب ستتجاوز 20 يوم خلال أسبوع. ' : ''}
+        </p>
+        <div class="chips" style="margin-top:8px">
+          ${top3.map(b => `<span class="chip danger">🏢 ${b.branch} — حرج: ${fmt(b.criticalRequests)} | تصعيد: ${fmt(b.escalationRequests)}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ════════ TREND SECTION ════════
+   NOTE: Trend comparison requires Daily Snapshot data.
+   Expected Google Sheets structure for Daily_Snapshot tab:
+   Columns: snapshotDate | branch | salesPerson | pendingOrders |
+            pendingAmount | criticalOrders | warningOrders |
+            noSalespersonOrders | maxDays
+   Add this as an additional endpoint in your Apps Script:
+   function doGet(e) {
+     const sheet = SpreadsheetApp.getActive().getSheetByName('Daily_Snapshot');
+     ...return data as dailySnapshots array...
+   }
+════════ */
+function renderTrend() {
+  if (historicalData && Array.isArray(historicalData) && historicalData.length >= 2) {
+    renderTrendComparison(historicalData);
+  } else {
+    document.getElementById('trendDiv').innerHTML = `
+      <div class="card trend-card">
+        <div class="trend-placeholder">
+          <div class="t-icon">📉</div>
+          <h4>Trend Comparison — غير متاح حاليًا</h4>
+          <p>
+            مقارنة اليوم بالأمس تحتاج إلى <strong>Daily Snapshot</strong> في Google Sheets.<br>
+            أضف Tab باسم <code>Daily_Snapshot</code> يحتوي على الأعمدة التالية:
+          </p>
+          <p style="margin-top:8px;font-family:monospace;font-size:10px;background:rgba(255,255,255,.04);padding:10px;border-radius:8px;direction:ltr;text-align:left">
+            snapshotDate | branch | pendingOrders | pendingAmount |<br>
+            criticalOrders | warningOrders | noSalespersonOrders | maxDays
+          </p>
+          <div class="trend-hint">
+            💡 عند إضافة Daily Snapshot وإرجاعه كـ <code>dailySnapshots</code> في API Response،
+            سيظهر Trend تلقائيًا مع مقارنة تفصيلية بكل فرع.
+          </div>
+        </div>
+      </div>`;
+    // Hide trend chart placeholder
+    document.getElementById('trendChart').classList.add('hidden');
+    document.getElementById('trendChartPlaceholder').classList.remove('hidden');
+  }
+}
+
+function renderTrendComparison(snapshots) {
+  // ── الخطوة 1: تجميع الـ snapshots حسب التاريخ (كل فرع يُجمع في يوم واحد)
+  // السبب: كل يوم يحتوي على 7 صفوف (فرع واحد لكل صف) — يجب جمعها أولاً
+  const byDate = {};
+  snapshots.forEach(s => {
+    const d = s.snapshotDate;
+    if (!d) return;
+    if (!byDate[d]) byDate[d] = {
+      snapshotDate:        d,
+      pendingOrders:       0,
+      pendingAmount:       0,
+      criticalOrders:      0,
+      warningOrders:       0,
+      noSalespersonOrders: 0,
+      maxDays:             0,
+      branchCount:         0
+    };
+    byDate[d].pendingOrders       += Number(s.pendingOrders)       || 0;
+    byDate[d].pendingAmount       += Number(s.pendingAmount)       || 0;
+    byDate[d].criticalOrders      += Number(s.criticalOrders)      || 0;
+    byDate[d].warningOrders       += Number(s.warningOrders)       || 0;
+    byDate[d].noSalespersonOrders += Number(s.noSalespersonOrders) || 0;
+    byDate[d].maxDays              = Math.max(byDate[d].maxDays, Number(s.maxDays) || 0);
+    byDate[d].branchCount++;
+  });
+
+  // ── الخطوة 2: ترتيب الأيام من الأحدث للأقدم
+  const days = Object.values(byDate).sort((a,b) =>
+    new Date(b.snapshotDate) - new Date(a.snapshotDate)
+  );
+
+  // ── الخطوة 3: نحتاج على الأقل يومين للمقارنة
+  if (days.length < 2) {
+    // يوجد يوم واحد فقط — اعرض البيانات مع توضيح عدم إمكانية المقارنة
+    const only = days[0];
+    document.getElementById('trendDiv').innerHTML = `
+      <div class="card trend-card">
+        <div class="sec-ttl" style="margin-top:0">📅 Snapshot متاح ليوم واحد فقط (${only?.snapshotDate||'—'})</div>
+        <div class="trend-placeholder">
+          <div class="t-icon">📊</div>
+          <h4>تسجيل البيانات جارٍ</h4>
+          <p>تم تسجيل snapshot ليوم <strong>${only?.snapshotDate||'—'}</strong> بإجمالي
+             <strong>${fmt(only?.pendingOrders||0)} طلب</strong>.<br>
+             للحصول على مقارنة اليوم بالأمس، يجب تشغيل <code>saveDailySnapshot()</code>
+             يومياً. بعد يومين من التسجيل، تظهر المقارنة تلقائياً.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const todaySnap = days[0];
+  const yestSnap  = days[1];
+
+  // ── الخطوة 4: دالة عرض التغيير
+  const delta = (a, b) => {
+    const d = a - b;
+    if (d < 0) return `<span class="t-down">↓ ${fmt(Math.abs(d))}</span>`;
+    if (d > 0) return `<span class="t-up">↑ ${fmt(d)}</span>`;
+    return `<span class="t-stable">→ ثابت</span>`;
+  };
+
+  // ── الخطوة 5: مقارنة على مستوى الفروع (لو كلا اليومين موجودان)
+  const todayBranches = snapshots.filter(s => s.snapshotDate === todaySnap.snapshotDate);
+  const yestBranches  = snapshots.filter(s => s.snapshotDate === yestSnap.snapshotDate);
+  const yestMap = {};
+  yestBranches.forEach(b => { yestMap[b.branch] = b; });
+
+  const branchRows = todayBranches.map(tb => {
+    const yb = yestMap[tb.branch] || {pendingOrders:0};
+    const chg = (Number(tb.pendingOrders)||0) - (Number(yb.pendingOrders)||0);
+    const statusCls = chg < 0 ? 't-down' : chg > 0 ? 't-up' : 't-stable';
+    const statusTxt = chg < 0 ? `↓ ${fmt(Math.abs(chg))}` : chg > 0 ? `↑ ${fmt(chg)}` : '→ ثابت';
+    return `<tr>
+      <td>${tb.branch}</td>
+      <td>${fmt(tb.pendingOrders||0)}</td>
+      <td>${fmt(yb.pendingOrders||0)}</td>
+      <td><span class="${statusCls}">${statusTxt}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('trendDiv').innerHTML = `
+    <div class="card trend-card">
+      <div class="sec-ttl" style="margin-top:0">
+        مقارنة اليوم بالأمس
+        <span style="font-size:10px;color:var(--muted);font-weight:400;margin-right:8px">
+          اليوم: ${todaySnap.snapshotDate} | الأمس: ${yestSnap.snapshotDate}
+        </span>
+      </div>
+
+      <!-- KPI comparison -->
+      <div class="trend-comparison" style="margin-bottom:16px">
+        <table>
+          <thead><tr><th>المؤشر</th><th>اليوم</th><th>الأمس</th><th>التغيير</th></tr></thead>
+          <tbody>
+            <tr><td>إجمالي الطلبات</td>
+                <td><strong>${fmt(todaySnap.pendingOrders)}</strong></td>
+                <td>${fmt(yestSnap.pendingOrders)}</td>
+                <td>${delta(todaySnap.pendingOrders, yestSnap.pendingOrders)}</td></tr>
+            <tr><td>إجمالي القيمة</td>
+                <td><strong>${money(todaySnap.pendingAmount)}</strong></td>
+                <td>${money(yestSnap.pendingAmount)}</td>
+                <td>${delta(todaySnap.pendingAmount, yestSnap.pendingAmount)}</td></tr>
+            <tr><td>طلبات حرجة (30+)</td>
+                <td><strong style="color:${todaySnap.criticalOrders>0?'#fc8181':'#68d391'}">${fmt(todaySnap.criticalOrders)}</strong></td>
+                <td>${fmt(yestSnap.criticalOrders)}</td>
+                <td>${delta(todaySnap.criticalOrders, yestSnap.criticalOrders)}</td></tr>
+            <tr><td>طلبات تحذير (10-29)</td>
+                <td>${fmt(todaySnap.warningOrders)}</td>
+                <td>${fmt(yestSnap.warningOrders)}</td>
+                <td>${delta(todaySnap.warningOrders, yestSnap.warningOrders)}</td></tr>
+            <tr><td>بدون مندوب</td>
+                <td>${fmt(todaySnap.noSalespersonOrders)}</td>
+                <td>${fmt(yestSnap.noSalespersonOrders)}</td>
+                <td>${delta(todaySnap.noSalespersonOrders, yestSnap.noSalespersonOrders)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Branch-level breakdown -->
+      <div class="sec-ttl" style="margin-top:0;font-size:10px">تفصيل التغيير حسب الفرع</div>
+      <div class="trend-comparison">
+        <table>
+          <thead><tr><th>الفرع</th><th>اليوم</th><th>الأمس</th><th>التغيير</th></tr></thead>
+          <tbody>${branchRows || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">لا توجد بيانات فروع</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // Chart
+  document.getElementById('trendChartPlaceholder').classList.add('hidden');
+  document.getElementById('trendChart').classList.remove('hidden');
+  buildTrendChart(days.slice(0,7).reverse());
+}
+
+/* ════════ CEO ACTION PLAN ════════ */
+function renderActionPlan() {
+  const br = metrics.branchesByRisk;
+  const top = metrics.branches;
+  const topPerson = metrics.people[0] || {};
+  const pcCls = ['pc1','pc2','pc3','pc4','pc5'];
+
+  const actions = [];
+
+  // 1. Critical orders
+  if (metrics.criticalReq > 0) {
+    const critBranch = br.find(b => b.criticalRequests > 0);
+    actions.push({n:1, owner: critBranch?.branch||'جميع الفروع', issue:`${fmt(metrics.criticalReq)} طلب تجاوز 30 يوم`, action:'تصعيد فوري — اتصل بمدير الفرع الآن', deadline:'اليوم', cls:'b-red'});
+  }
+
+  // 2. Highest risk branch
+  if (br[0]) actions.push({n:actions.length+1, owner:br[0].branch, issue:`Risk Score: ${br[0].score}/100 (${br[0].level})`, action:'مراجعة شاملة لأوامر الفرع مع المدير', deadline:'خلال 24 ساعة', cls:'b-orange'});
+
+  // 3. Escalation approaching
+  if (metrics.soon20 > 0) {
+    const s20Branch = metrics.branches.find(b => b.soon20 > 0);
+    actions.push({n:actions.length+1, owner:s20Branch?.branch||'متعدد', issue:`${fmt(metrics.soon20)} طلب ستتجاوز 20 يوم خلال أسبوع`, action:'مراجعة قبل انتقالها لنطاق التصعيد', deadline:'خلال أسبوع', cls:'b-yellow'});
+  }
+
+  // 4. Top salesperson load
+  if (topPerson.name) actions.push({n:actions.length+1, owner:topPerson.name+' — '+topPerson.branch, issue:`أعلى حمل: ${fmt(topPerson.requests)} طلب / ${topPerson.maxDays} يوم أعلى تعليق`, action:'متابعة مباشرة مع المندوب', deadline:'هذا الأسبوع', cls:'b-yellow'});
+
+  // 5. Unnamed orders
+  if (metrics.unnamedReq > 0) actions.push({n:actions.length+1, owner:'مسؤول أودو', issue:`${fmt(metrics.unnamedReq)} طلب بدون مندوب (${money(metrics.unnamedAmt)})`, action:'تحديث بيانات المناديب في Odoo 18', deadline:'خلال 48 ساعة', cls:'b-teal'});
+
+  // Ensure 5 actions
+  while (actions.length < 5) {
+    const i = actions.length;
+    const b = top[i] || top[top.length-1] || {};
+    actions.push({n:i+1, owner:b.branch||'—', issue:`حجم طلبات: ${fmt(b.requests||0)}`, action:'متابعة تشغيلية دورية', deadline:'هذا الأسبوع', cls:'b-green'});
+  }
+
+  const rows = actions.slice(0,5).map((a,i) => `
+    <tr>
+      <td><span class="pri-circle ${pcCls[i]}">${a.n}</span></td>
+      <td><strong style="color:var(--gold2)">${a.owner}</strong></td>
+      <td style="color:var(--muted)">${a.issue}</td>
+      <td><span class="badge ${a.cls}">${a.action}</span></td>
+      <td style="color:var(--muted);white-space:nowrap">${a.deadline}</td>
+    </tr>`).join('');
+
+  document.getElementById('actionDiv').innerHTML = `
+    <div class="card action-card">
+      <table>
+        <thead><tr><th>#</th><th>المسؤول / الفرع</th><th>المشكلة</th><th>الإجراء المطلوب</th><th>الموعد</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ════════ BRANCH RISK TABLE ════════ */
+function renderRisk() {
+  const rows = metrics.branchesByRisk.map((b,i) => {
+    const barColor = b.color;
+    return `
+      <tr>
+        <td><span class="badge ${i===0?'b-red':i<=2?'b-orange':'b-yellow'}">${i+1}</span></td>
+        <td><strong>${b.branch}</strong></td>
+        <td>${fmt(b.requests)}</td>
+        <td>${money(b.amount)}</td>
+        <td>${b.maxDays} يوم</td>
+        <td>${fmt(b.criticalRequests)}</td>
+        <td>${fmt(b.unnamedRequests)}</td>
+        <td>
+          <div class="risk-score">
+            <strong style="color:${barColor}">${b.score}</strong>
+            <div class="risk-bar"><div class="risk-bar-fill" style="width:${b.score}%;background:${barColor}"></div></div>
+          </div>
+        </td>
+        <td><span class="badge ${b.cls}">${b.level}</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('riskDiv').innerHTML = `
+    <div class="card risk-card">
+      <table>
+        <thead>
+          <tr><th>#</th><th>الفرع</th><th>الطلبات</th><th>المبلغ</th><th>أعلى تعليق</th><th>حرج (30+)</th><th>بدون مندوب</th><th>Risk Score /100</th><th>المستوى</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ════════ DATA QUALITY PANEL ════════ */
+function renderDQ() {
+  const t = metrics.totalRequests || 1;
+  const items = [
+    {label:'طلبات بدون مندوب',       count:metrics.unnamedReq,  fix:'تحديث salesPerson في Odoo 18',     cls:metrics.unnamedReq>0?'issue':'ok'},
+    {label:'طلبات بدون قيمة مالية',  count:metrics.noAmountReq, fix:'مراجعة amount في Google Sheets',    cls:metrics.noAmountReq>0?'issue':'ok'},
+    {label:'طلبات بدون تاريخ مراجعة',count:metrics.noDateReq,   fix:'تحديث reviewDate في الشيت',         cls:metrics.noDateReq>0?'issue':'ok'},
+    {label:'سجلات قديمة / صفرية',    count:metrics.zeroOldReq,  fix:'إغلاق أو أرشفة في Odoo',           cls:metrics.zeroOldReq>0?'issue':'ok'},
+    {label:'صفوف بدون فرع محدد',      count:(metrics.active||[]).filter(r=>!r.branch||r.branch==='\u063a\u064a\u0631 \u0645\u062d\u062f\u062f').length, fix:'تصحيح حقل branch في Google Sheets', cls:'issue'},
+    {label:'صفوف salesPerson غير محدد',count:metrics.noSPReq,   fix:'ربط الطلبات بمناديبها في أودو',     cls:metrics.noSPReq>0?'issue':'ok'},
+  ];
+
+  const cards = items.map(it => `
+    <div class="dq-item ${it.count===0?'ok':'issue'}">
+      <div class="dq-label">${it.label}</div>
+      <div class="dq-count ${it.count===0?'ok':'issue'}">${it.count===0?'✅ 0':fmt(it.count)}</div>
+      ${it.count > 0 ? `<div class="dq-fix">📌 ${it.fix}</div>` : ''}
+    </div>`).join('');
+
+  document.getElementById('dqDiv').innerHTML = `
+    <div class="card dq-card">
+      <div class="dq-grid">${cards}</div>
+    </div>`;
+}
+
+/* ════════ TOP 10 SALESPERSONS (ENHANCED) ════════ */
+function renderTop10() {
+  const maxR = Math.max(...metrics.people.map(p=>p.requests),1);
+  const rows = metrics.people.slice(0,10).map((p,i) => {
+    const act = spAction(p);
+    const pr  = priority(p.maxDays, '');
+    return `
+      <tr>
+        <td><span class="badge ${i<3?'b-yellow':'b-purple'}">${i+1}</span></td>
+        <td>${isUnnamed(p.name)?'<span style="color:#81e6d9">— بدون مندوب</span>':p.name}</td>
+        <td>${p.branch}</td>
+        <td>
+          <strong>${fmt(p.requests)}</strong>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill" style="width:${p.requests/maxR*100}%"></div></div>
+        </td>
+        <td>${money(p.amount)}</td>
+        <td>${p.maxDays}</td>
+        <td>${fmt(p.criticalOrders)}</td>
+        <td><span class="badge ${pr.cls}">${pr.label}</span></td>
+        <td><span class="badge ${act.cls}">${act.text}</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('top10Div').innerHTML = `
+    <div class="card top10-card">
+      <table>
+        <thead><tr><th>#</th><th>المندوب</th><th>الفرع</th><th>الطلبات</th><th>المبلغ</th><th>أعلى تعليق</th><th>حرج (30+)</th><th>الحالة</th><th>الإجراء المقترح</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ════════ BRANCH RANKING ════════ */
+function renderRanking() {
+  const maxR = Math.max(...metrics.branches.map(b=>b.requests),1);
+  document.getElementById('rankingDiv').innerHTML = metrics.branches.map(b => `
+    <div class="rank-row">
+      <div class="rank-name">${b.branch}</div>
+      <div class="rank-track"><div class="rank-fill" style="width:${b.requests/maxR*100}%"><span>${fmt(b.requests)}</span></div></div>
+      <div class="rank-side">${money(b.amount)}</div>
+    </div>`).join('');
+}
+
+/* ════════ BRANCH CARDS ════════ */
+function renderBranches() {
+  const maxR = Math.max(...metrics.branches.map(b=>b.requests),1);
+  document.getElementById('branchesDiv').innerHTML = metrics.branches.map((b,i) => {
+    const people = Object.values(b.rows.reduce((acc,r) => {
+      const k = r.salesPerson;
+      if (!acc[k]) acc[k] = {name:k,requests:0,amount:0,maxDays:0,priority:''};
+      acc[k].requests += r.requests; acc[k].amount += r.amount;
+      acc[k].maxDays = Math.max(acc[k].maxDays, r.daysPending);
+      acc[k].priority = r.priority;
+      return acc;
+    },{})).sort((a,b)=>b.requests-a.requests);
+
+    return `
+      <div class="card branch-card">
+        <div class="branch-head">
+          <div class="branch-rank">${i+1}</div>
+          <div class="branch-name">${b.branch} <span class="badge ${b.cls}" style="font-size:9px;margin-right:4px">${b.level}</span></div>
+          <div class="branch-badge">${fmt(b.requests)} طلب</div>
+        </div>
+        <div class="branch-body">
+          <div class="b-stats">
+            <div class="b-stat"><div class="b-stat-lbl">المبلغ</div><div class="b-stat-val" style="font-size:11px">${money(b.amount)}</div></div>
+            <div class="b-stat"><div class="b-stat-lbl">متوسط/طلب</div><div class="b-stat-val" style="font-size:11px">${money(b.avg)}</div></div>
+            <div class="b-stat"><div class="b-stat-lbl">Risk Score</div><div class="b-stat-val" style="color:${b.color}">${b.score}/100</div></div>
+          </div>
+          <div class="b-prog"><div class="b-prog-fill" style="width:${b.requests/maxR*100}%"></div></div>
+          <button class="sp-btn" onclick="this.nextElementSibling.classList.toggle('open');const a=this.querySelector('.arr');a.textContent=a.textContent==='▼'?'▲':'▼'">
+            <span>تفصيل المناديب (${people.length})</span><span class="arr">▼</span>
+          </button>
+          <div class="sp-wrap">
+            <table>
+              <thead><tr><th>المندوب</th><th>الطلبات</th><th>المبلغ</th><th>الأيام</th><th>الحالة</th></tr></thead>
+              <tbody>
+                ${people.map(p => {
+                  const pr = priority(p.maxDays, p.priority);
+                  return `<tr>
+                    <td>${isUnnamed(p.name)?'<span style="color:#81e6d9">— بدون مندوب</span>':p.name}</td>
+                    <td>${fmt(p.requests)}</td>
+                    <td>${money(p.amount)}</td>
+                    <td>${p.maxDays}</td>
+                    <td><span class="badge ${pr.cls}">${pr.label}</span></td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ════════ WHATSAPP MESSAGES (3 TYPES) — PRESERVED COPY LOGIC ════════ */
+function renderWhatsApp() {
+  const d = metrics.reviewDate || new Date().toLocaleDateString('en-GB');
+  const topBranches = metrics.branchesByRisk.slice(0,3);
+
+  // ── Type 1: CEO Summary (compact) ──
+  const topActions = [
+    metrics.criticalReq > 0 ? `① تصعيد ${fmt(metrics.criticalReq)} طلب حرج في ${topBranches[0]?.branch||'—'}` : null,
+    `② مراجعة ${topBranches[0]?.branch||'—'} (Risk Score: ${topBranches[0]?.score||0}/100)`,
+    metrics.soon20 > 0 ? `③ ${fmt(metrics.soon20)} طلب ستتجاوز 20 يوم خلال أسبوع` : null,
+    `④ تحديث ${fmt(metrics.unnamedReq)} طلب بدون مندوب في أودو`,
+  ].filter(Boolean).slice(0,3);
+
+  const ceoMsg = `📊 تقرير CEO اليومي — أوامر القص المعلقة
+🗓 ${d}
+━━━━━━━━━━━━━━━━━━━━━
+📦 الإجمالي: ${fmt(metrics.totalRequests)} طلب
+💰 القيمة: ${money(metrics.totalAmount)}
+🔴 حرج (30+ يوم): ${fmt(metrics.criticalReq)} طلب
+🟠 تصعيد (20-29 يوم): ${fmt(metrics.watchReq)} طلب
+🟡 تحذير (10-19 يوم): ${fmt(metrics.warnReq)} طلب
+━━━━━━━━━━━━━━━━━━━━━
+🏆 أعلى 3 فروع خطورة:
+${topBranches.map((b,i)=>`${i+1}. ${b.branch} — Risk: ${b.score}/100 (${b.level})`).join('\n')}
+━━━━━━━━━━━━━━━━━━━━━
+⚡ أهم الإجراءات اليوم:
+${topActions.join('\n')}`;
+
+  // ── Type 2: Branch Manager messages ──
+  const branchCards = metrics.branches.map((b,i) => {
+    const topSP = Object.values(b.rows.reduce((acc,r)=>{
+      if(!acc[r.salesPerson])acc[r.salesPerson]={name:r.salesPerson,requests:0,maxDays:0};
+      acc[r.salesPerson].requests+=r.requests;
+      acc[r.salesPerson].maxDays=Math.max(acc[r.salesPerson].maxDays,r.daysPending);
+      return acc;
+    },{})).sort((a,c)=>c.requests-a.requests).slice(0,5);
+
+    const act = b.criticalRequests > 0
+      ? '⚡ تصعيد فوري — مراجعة الطلبات الحرجة مع الإدارة'
+      : b.escalationRequests > 0
+      ? '⏱️ متابعة عاجلة — تجنب تجاوز 20 يوم'
+      : '✅ متابعة دورية — الحفاظ على المستوى الحالي';
+
+    const text = `📌 تقرير أوامر القص — ${b.branch}
+🗓 ${d}
+━━━━━━━━━━━━━━━
+📦 إجمالي الطلبات: ${fmt(b.requests)}
+💰 إجمالي المبلغ: ${money(b.amount)}
+🔴 طلبات حرجة (30+): ${fmt(b.criticalRequests)}
+🟠 طلبات تصعيد (20-29): ${fmt(b.escalationRequests)}
+🔍 بدون مندوب: ${fmt(b.unnamedRequests)}
+
+أعلى المناديب:
+${topSP.map(p=>`🟡 ${isUnnamed(p.name)?'بدون مندوب':p.name}: ${fmt(p.requests)} طلب — (${p.maxDays} يوم)`).join('\n')}
+
+⚡ الإجراء المطلوب: ${act}
+📌 إجمالي: ${fmt(b.requests)} طلب | ${money(b.amount)}`;
+
+    return `<div class="wa-card"><div class="wa-head"><span class="wa-name">🏢 ${b.branch}</span><button class="copy-btn" onclick="copyWA(this)">📋 نسخ</button></div><div class="wa-body">${text}</div></div>`;
+  }).join('');
+
+  // ── Type 3: Salesperson Follow-up (top 5) ──
+  const spCards = metrics.people.filter(p => !isUnnamed(p.name)).slice(0,5).map(p => {
+    const act = spAction(p);
+    const pr  = priority(p.maxDays,'');
+    const text = `📋 متابعة مندوب — ${p.name}
+🏢 الفرع: ${p.branch}
+🗓 ${d}
+━━━━━━━━━━━━━━
+📦 عدد الطلبات: ${fmt(p.requests)}
+💰 إجمالي المبلغ: ${money(p.amount)}
+⏰ أعلى تعليق: ${p.maxDays} يوم
+🔴 طلبات حرجة (30+): ${fmt(p.criticalOrders)}
+🟠 طلبات تصعيد (20-29): ${fmt(p.escalationOrders)}
+الحالة: ${pr.label}
+━━━━━━━━━━━━━━
+⚡ الإجراء المطلوب: ${act.text}`;
+    return `<div class="wa-card"><div class="wa-head"><span class="wa-name">👤 ${p.name} — ${p.branch}</span><button class="copy-btn" onclick="copyWA(this)">📋 نسخ</button></div><div class="wa-body">${text}</div></div>`;
+  }).join('');
+
+  document.getElementById('waDiv').innerHTML = `
+    <div class="wa-section">
+      <div class="wa-hdr">
+        <h3>📱 رسائل واتساب مُعدّة تلقائيًا</h3>
+        <button class="btn" onclick="copyAll()">📋 نسخ الكل</button>
+      </div>
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="switchWaTab('ceo',this)">👔 رسالة CEO</button>
+        <button class="tab-btn" onclick="switchWaTab('branches',this)">🏢 مديري الفروع (${metrics.branches.length})</button>
+        <button class="tab-btn" onclick="switchWaTab('salespeople',this)">👤 متابعة المناديب</button>
+      </div>
+      <div id="wa-ceo" class="tab-pane active">
+        <div class="wa-grid" style="grid-template-columns:1fr">
+          <div class="wa-card wide"><div class="wa-head"><span class="wa-name">📊 رسالة CEO — ملخص يومي</span><button class="copy-btn" onclick="copyWA(this)">📋 نسخ</button></div><div class="wa-body">${ceoMsg}</div></div>
+        </div>
+      </div>
+      <div id="wa-branches" class="tab-pane">
+        <div class="wa-grid">${branchCards}</div>
+      </div>
+      <div id="wa-salespeople" class="tab-pane">
+        <div class="wa-grid">${spCards || '<p style="color:var(--muted);padding:16px">لا توجد بيانات مناديب كافية</p>'}</div>
+      </div>
+    </div>`;
+}
+
+/* ════════ CHARTS ════════ */
+const CHART_DEFAULTS = {
+  color: 'rgba(226,232,240,.7)',
+  plugins: { legend: { labels: { color:'rgba(226,232,240,.7)', font:{family:'Cairo',size:11} } } }
+};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function updateCharts() {
+  if (!metrics.branches || !metrics.branches.length) return;
+
+  const t = metrics.totalRequests || 1;
+
+  // Chart 1: Aging Doughnut
+  destroyChart('agingChart');
+  charts['agingChart'] = new Chart(document.getElementById('agingChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['جديد 0-9', 'تحذير 10-19', 'تصعيد 20-29', 'حرج 30+'],
+      datasets: [{
+        data: [metrics.newReq, metrics.warnReq, metrics.watchReq, metrics.criticalReq],
+        backgroundColor: ['rgba(56,161,105,.8)','rgba(214,158,46,.8)','rgba(221,107,32,.8)','rgba(229,62,62,.8)'],
+        borderColor: '#0f1828', borderWidth: 2
+      }]
+    },
+    options: { plugins: { ...CHART_DEFAULTS.plugins }, cutout:'65%', responsive:true }
+  });
+
+  // Chart 2: Branch Orders Bar
+  destroyChart('branchOrdersChart');
+  const bLabels = metrics.branches.map(b=>b.branch);
+  charts['branchOrdersChart'] = new Chart(document.getElementById('branchOrdersChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: bLabels,
+      datasets: [{label:'الطلبات', data:metrics.branches.map(b=>b.requests),
+        backgroundColor:'rgba(201,162,39,.7)', borderColor:'rgba(201,162,39,1)', borderWidth:1}]
+    },
+    options: {indexAxis:'y', plugins:{...CHART_DEFAULTS.plugins,legend:{display:false}}, scales:{x:{ticks:{color:CHART_DEFAULTS.color}},y:{ticks:{color:CHART_DEFAULTS.color}}}, responsive:true}
+  });
+
+  // Chart 3: Branch Amount Bar
+  destroyChart('branchAmountChart');
+  charts['branchAmountChart'] = new Chart(document.getElementById('branchAmountChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: bLabels,
+      datasets: [{label:'القيمة (﷼)', data:metrics.branches.map(b=>b.amount),
+        backgroundColor:'rgba(49,151,149,.7)', borderColor:'rgba(49,151,149,1)', borderWidth:1}]
+    },
+    options: {indexAxis:'y', plugins:{...CHART_DEFAULTS.plugins,legend:{display:false}}, scales:{x:{ticks:{color:CHART_DEFAULTS.color}},y:{ticks:{color:CHART_DEFAULTS.color}}}, responsive:true}
+  });
+
+  // Chart 4: Top 10 Salespersons
+  destroyChart('top10Chart');
+  const top10 = metrics.people.slice(0,10);
+  charts['top10Chart'] = new Chart(document.getElementById('top10Chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: top10.map(p=>p.name.substring(0,12)),
+      datasets: [{label:'الطلبات', data:top10.map(p=>p.requests),
+        backgroundColor:'rgba(124,92,191,.7)', borderColor:'rgba(124,92,191,1)', borderWidth:1}]
+    },
+    options: {plugins:{...CHART_DEFAULTS.plugins,legend:{display:false}}, scales:{x:{ticks:{color:CHART_DEFAULTS.color}},y:{ticks:{color:CHART_DEFAULTS.color}}}, responsive:true}
+  });
+
+  // Chart 5: Branch Risk Score
+  destroyChart('riskChart');
+  const byRisk = metrics.branchesByRisk;
+  charts['riskChart'] = new Chart(document.getElementById('riskChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: byRisk.map(b=>b.branch),
+      datasets: [{label:'Risk Score',
+        data: byRisk.map(b=>b.score),
+        backgroundColor: byRisk.map(b=>b.color+'bb'),
+        borderColor: byRisk.map(b=>b.color), borderWidth:1}]
+    },
+    options: {indexAxis:'y', plugins:{...CHART_DEFAULTS.plugins,legend:{display:false}}, scales:{x:{max:100,ticks:{color:CHART_DEFAULTS.color}},y:{ticks:{color:CHART_DEFAULTS.color}}}, responsive:true}
+  });
+}
+
+function buildTrendChart(dayAggregates) {
+  // dayAggregates = مصفوفة بيانات مجمّعة حسب اليوم (ليس صفوف الفروع)
+  destroyChart('trendChart');
+  const ctx = document.getElementById('trendChart');
+  if (!ctx || !dayAggregates || !dayAggregates.length) return;
+  charts['trendChart'] = new Chart(ctx.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: dayAggregates.map(s => s.snapshotDate),
+      datasets: [
+        {label:'إجمالي الطلبات', data:dayAggregates.map(s=>s.pendingOrders),
+         borderColor:'rgba(201,162,39,1)', backgroundColor:'rgba(201,162,39,.1)', fill:true, tension:.4},
+        {label:'طلبات حرجة', data:dayAggregates.map(s=>s.criticalOrders),
+         borderColor:'rgba(229,62,62,1)', backgroundColor:'rgba(229,62,62,.08)', fill:true, tension:.4}
+      ]
+    },
+    options: {
+      plugins:{...CHART_DEFAULTS.plugins},
+      scales:{
+        x:{ticks:{color:CHART_DEFAULTS.color}},
+        y:{ticks:{color:CHART_DEFAULTS.color}, beginAtZero:true}
+      },
+      responsive:true
+    }
+  });
+}
+
+/* ════════ UI HELPERS ════════ */
+
+/**
+ * scrollToSection — آمن 100% ولا يتعارض مع window.scrollTo
+ * @param {string} sectionId - الـ id الخاص بالقسم
+ * @param {HTMLElement} btn   - الزر اللي اتضغط (لإضافة active class)
+ */
+function scrollToSection(sectionId, btn) {
+  const el = document.getElementById(sectionId);
+  if (!el) {
+    console.warn('scrollToSection: section not found —', sectionId);
+    return;
+  }
+
+  // offset يأخذ في الاعتبار الـ sticky header (66px) + sticky nav (40px) + margin
+  const OFFSET = -120;
+  const top = el.getBoundingClientRect().top + window.pageYOffset + OFFSET;
+
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+
+  // Active state على الأزرار
+  document.querySelectorAll('.nav-a').forEach(x => x.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function switchWaTab(pane, btn) {
+  ['ceo','branches','salespeople'].forEach(p => {
+    const el = document.getElementById('wa-'+p);
+    if (el) el.classList.toggle('active', p===pane);
+  });
+  btn.closest('.tab-group').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* WhatsApp copy — PRESERVED FROM V1 */
+function copyWA(btn) {
+  const text = btn.closest('.wa-card').querySelector('.wa-body').innerText;
+  navigator.clipboard.writeText(text).catch(() => {
+    const r=document.createRange(); r.selectNode(btn.closest('.wa-card').querySelector('.wa-body'));
+    window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
+    document.execCommand('copy'); window.getSelection().removeAllRanges();
+  });
+  const old = btn.innerHTML; btn.innerHTML='✅ تم النسخ'; btn.classList.add('copied');
+  setTimeout(()=>{ btn.innerHTML=old; btn.classList.remove('copied'); }, 2000);
+}
+
+function copyAll() {
+  const msgs = document.querySelectorAll('.wa-body');
+  const text = [...msgs].map(m=>m.innerText).join('\n\n' + '━'.repeat(20) + '\n\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.querySelector('.wa-hdr .btn');
+    const old=btn.innerHTML; btn.innerHTML='✅ تم نسخ الكل';
+    setTimeout(()=>btn.innerHTML=old,2500);
+  });
+}
+
+/* Period tag — called inside renderAll */
+function renderPeriod() {
+  const el = document.getElementById('periodTag');
+  if (el) el.textContent =
+    '\ud83d\uddd3\ufe0f \u0622\u062e\u0631 \u0645\u0631\u0627\u062c\u0639\u0629: ' + (metrics.reviewDate||'\u2014') +
+    ' | ' + metrics.branches.length + ' \u0641\u0631\u0648\u0639 | ' + fmt(metrics.totalRequests) + ' \u0637\u0644\u0628';
+}
+
+/* ════════ INIT ════════ */
+window.addEventListener('DOMContentLoaded', loadData);
+
+/*
+════════════════════════════════════════════════════════════════
+  DAILY SNAPSHOT STRUCTURE (for Trend feature — future use)
+  
+  Add a new sheet tab named "Daily_Snapshot" to your Google Sheets
+  with the following columns:
+  
+  | snapshotDate | branch | pendingOrders | pendingAmount |
+  | criticalOrders | warningOrders | noSalespersonOrders | maxDays |
+  
+  Then update your Apps Script (doGet) to return:
+  
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      rows: [...current data...],
+      dailySnapshots: [...snapshot rows...]   // <-- ADD THIS
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
+  
+  Once this is added, the Trend section will automatically
+  show comparisons between today and previous days.
+════════════════════════════════════════════════════════════════
+*/
+</script>
+</body>
+</html>
