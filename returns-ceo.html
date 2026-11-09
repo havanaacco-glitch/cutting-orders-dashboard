@@ -2,7 +2,7 @@
 const data=JSON.parse(document.getElementById('data').textContent);
 const branches=["المحجر","الستين","الرياض النموذجية","الرياض البطحاء","خميس مشيط","جيزان","القصيم"];
 const sel=document.getElementById('date'),branch=document.getElementById('branch');
-const dates=[...new Set([...data.archive.map(x=>x.date),...data.rows.map(x=>x[0])])].sort().reverse();
+const dates=[...new Set([...data.archive.map(x=>x.date),...data.rows.map(x=>x[0])])].filter(x=>{const item=data.archive.find(a=>a.date===x);const hasTransactions=data.rows.some(r=>r[0]===x);const friday=new Date(x+'T12:00:00Z').getUTCDay()===5;const holidayWithoutSessions=item?.closedSessions===0&&item?.units==null&&!hasTransactions;return !friday&&!holidayWithoutSessions;}).sort().reverse();
 sel.innerHTML=dates.map(x=>'<option value="'+x+'">'+x+'</option>').join('');
 branch.innerHTML='<option value="all">جميع الفروع</option>'+branches.map(x=>'<option>'+x+'</option>').join('');
 const es=x=>String(x).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
